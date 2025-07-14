@@ -198,12 +198,12 @@ string SHA256(string s){
     // return "hashed string";
 }
 
-int main(){
-    string s = "";
-    cout<<"enter string to hash: ";
-    getline(cin, s);
+// int main(){
+//     string s = "";
+//     cout<<"enter string to hash: ";
+//     getline(cin, s);
 
-    cout<<"Hash: "<<SHA256(s)<<endl;;
-}
+//     cout<<"Hash: "<<SHA256(s)<<endl;;
+// }
 
 // jainish -> a97437861aacfa855ef82a47e368938a43a1747c1deda9263873d4514567ae19
