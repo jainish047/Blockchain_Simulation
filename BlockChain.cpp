@@ -1,5 +1,8 @@
 #include <bits/stdc++.h>
 #include <functional> // Required for std::hash
+
+#include "SHA256.h"
+
 using namespace std;
 
 class transaction{
@@ -9,21 +12,22 @@ class transaction{
     string timestamp; // Optional, can be added later
     string transactionID; // Optional, can be added later
     string signature;
+    string transactionHash;
+    string generateTransactionHash() const{
+        return SHA256(sender + receiver + to_string(amount) + timestamp + signature);
+    }
 
 public:
     transaction(string s, string r, double a) : sender(s), receiver(r), amount(a) {
         timestamp = to_string(time(nullptr)); // Current time as a string
-        transactionID = getHash(); // Generate a unique ID based on the transaction details
+        transactionID = transactionHash = generateTransactionHash(); // Generate a unique ID based on the transaction details
         signature = ""; // Placeholder for signature, can be implemented later
     }
     string getSender() const { return sender; }
     string getReceiver() const { return receiver; }
     double getAmount() const { return amount; }
-
-    string getHash() const{
-        // Simple hash function for demonstration purposes
-        return to_string(hash<string>()(sender + receiver + to_string(amount) + timestamp + signature));
-    }
+    string getTransactionHash() const { return transactionHash; }
+    
 };
 
 class block{
@@ -33,20 +37,45 @@ class block{
     string previousHash;
     string blockHash;
     string timestamp;
+    string merkelRoot;
+
+    string computeBlockHash() const{
+        // Simple hash function for demonstration purposes
+        string combine = to_string(index) + previousHash + timestamp + to_string(nonce) + merkelRoot;
+        for (const auto& tx : transactions) {
+            combine += tx.getTransactionHash();
+        }
+        return SHA256(combine);
+    }
+
+    string computeMerkelRoot(){
+        if (transactions.empty()) return "";
+
+        vector<string> transactionHashes;
+        for(auto tx:transactions){
+            transactionHashes.push_back(tx.getTransactionHash());
+        }
+
+        while (transactionHashes.size() > 1) {
+            if (transactionHashes.size() % 2 != 0)
+                transactionHashes.push_back(transactionHashes.back()); // Duplicate last hash if odd
+
+            vector<string> newLevel;
+            for (size_t i = 0; i < transactionHashes.size(); i += 2) {
+                newLevel.push_back(SHA256(transactionHashes[i] + transactionHashes[i + 1]));
+            }
+            transactionHashes = newLevel;
+        }
+        return transactionHashes.front();
+    }
 
 public:
     block(int idx, const string& prevHash, const vector<transaction> transactions) : index(idx), previousHash(prevHash), nonce(0), transactions(transactions) {
         timestamp = to_string(time(nullptr)); // Current time as a string
-        blockHash = getHash(); // Generate the block hash
+        blockHash = computeBlockHash(); // Generate the block hash
+        merkelRoot = computeMerkelRoot();   // generate merkel root
     }
-    string getHash() const{
-        // Simple hash function for demonstration purposes
-        string combine = to_string(index) + previousHash + timestamp + to_string(nonce);
-        for (const auto& tx : transactions) {
-            combine += tx.getHash();
-        }
-        return to_string(hash<string>()(combine));
-    }
+    
     string getBlockHash() const {
         return blockHash;
     }
